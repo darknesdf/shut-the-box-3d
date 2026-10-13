@@ -1,5 +1,3 @@
-.godot/
-build/
-*.translation
-export_credentials.cfg
-*.keystore
+/target
+Cargo.lock.bak
+*.apk

@@ -1,0 +1,66 @@
+[package]
+name = "shut_the_box_3d"
+version = "2.0.0"
+edition = "2021"
+description = "Shut The Box 3D - Rust + Bevy rewrite"
+
+[lib]
+name = "shut_the_box_3d"
+crate-type = ["lib", "cdylib"]
+
+[[bin]]
+name = "shut-the-box-3d"
+path = "src/main.rs"
+
+[dependencies]
+rand = "0.8"
+bevy = { version = "0.15", default-features = false, features = [
+    "bevy_asset",
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_render",
+    "bevy_text",
+    "bevy_ui",
+    "bevy_window",
+    "bevy_winit",
+    "bevy_log",
+    "default_font",
+    "multi_threaded",
+] }
+
+[target.'cfg(not(target_os = "android"))'.dependencies]
+bevy = { version = "0.15", default-features = false, features = ["x11", "wayland"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+bevy = { version = "0.15", default-features = false, features = ["android-native-activity"] }
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+
+# ---- Android (cargo-apk) ----
+[package.metadata.android]
+package = "com.example.shutthebox3d"
+apk_name = "ShutTheBox3D"
+build_targets = ["aarch64-linux-android"]
+
+[package.metadata.android.sdk]
+min_sdk_version = 24
+target_sdk_version = 34
+
+[package.metadata.android.application]
+label = "Shut The Box 3D"
+
+[package.metadata.android.application.activity]
+orientation = "landscape"
+
+[package.metadata.android.signing.release]
+path = "$HOME/.android/debug.keystore"
+keystore_password = "android"

@@ -1,36 +1,53 @@
-# Shut The Box 3D
+# Shut The Box 3D (Rust)
 
-A semi-3D "Shut the Box" game made with **Godot 4.3** (GDScript, GL Compatibility renderer).
+Penulisan ulang dari versi Godot/GDScript ke **Rust + Bevy 0.15**. Aturan main dan animasi
+sama dengan versi aslinya:
 
-- 3D dice with procedurally drawn pips, thrown in a smooth arc with damped bounces and a spin that winds down onto the rolled value
-- Wooden 3D tray, numbered cards 1-9 that pop out when selected and fold down with an ease-in drop and soft rebounds
-- **Lost screen**: when no combination fits, the remaining tiles turn red and slump, the camera shakes, and a "YOU LOST" panel shows your score
-- **Win screen** with confetti when you shut the box
-- **Clear** button to un-pick tiles, stats for best score and wins / games played (saved locally)
-- Haptic feedback on Android, gentle camera sway, shadows
-- Touch / mouse controls, landscape layout
+- Dadu 3D dengan mata dadu yang digambar prosedural, dilempar dengan lengkung + pantulan teredam
+- Nampan kayu 3D, kartu 1-9 yang naik saat dipilih dan terlipat dengan pantulan kecil
+- Kalah: kartu sisa memerah dan lunglai, kamera bergetar, kilatan merah, panel "YOU LOST"
+- Menang: confetti + panel "BOX SHUT!"
+- Tombol Clear, statistik best / wins / games tersimpan lokal
+- Kontrol sentuh / mouse, layout landscape
 
-## How to play
+## Cara main
 
-1. Tap **ROLL**. (When tiles 7, 8 and 9 are all shut, only one die is rolled.)
-2. Tap tiles whose numbers add up to the roll. When the total matches, they fold down automatically.
-3. Shut all 9 tiles to win. If no combination is possible, the game ends and your score is the sum of the open tiles (lower is better).
+1. Tekan **ROLL** (jika kartu 7, 8, 9 sudah tertutup, hanya 1 dadu yang dilempar).
+2. Pilih kartu yang jumlahnya sama dengan hasil lemparan; otomatis terlipat jika pas.
+3. Tutup semua 9 kartu untuk menang. Jika tak ada kombinasi, skor = jumlah kartu yang masih terbuka (makin kecil makin bagus).
 
-## Build on GitHub
+## Jalankan di desktop
 
-1. Create a new repository and push this folder to it.
-2. Open the **Actions** tab - the **Build Android APK** workflow runs on every push.
-3. Download the APK from the run's **Artifacts** (`ShutTheBox3D-apk`).
-4. Tag a commit `v1.0` to also attach the APK to a GitHub Release.
+```bash
+cargo run --release
+cargo test --lib        # tes aturan permainan, tween, picking, save
+```
 
-The workflow installs Godot 4.3 + export templates, the Android SDK, creates a debug keystore and exports a debug-signed APK (`com.example.shutthebox3d`). Change the package name in `export_presets.cfg`.
+Linux butuh: `libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev`.
 
-## Run locally
+## Build APK Android
 
-Open the folder in Godot 4.3+ and press F5.
+```bash
+rustup target add aarch64-linux-android
+cargo install cargo-apk
+# pastikan ANDROID_HOME dan ANDROID_NDK_ROOT sudah diset, dan keystore debug ada di ~/.android/debug.keystore
+cargo apk build --release --lib
+```
 
-## Layout
+Atau push ke GitHub: workflow `Build` menghasilkan artifact `ShutTheBox3D-apk`.
+Ganti package name di `[package.metadata.android]` pada `Cargo.toml` (dan path simpan di `src/save.rs`).
 
-- `scripts/main.gd` - game rules, world, UI
-- `scripts/die.gd` - 3D die + roll animation
-- `scripts/tile.gd` - numbered tile + select / flip animations
+## Struktur
+
+| File | Isi |
+| --- | --- |
+| `src/logic.rs` | aturan murni (subset-sum, toggle, satu/dua dadu) + unit test |
+| `src/game.rs` | state machine permainan (pengganti `main.gd`) |
+| `src/tile.rs` | kartu 1-9, animasi pilih / lipat / kalah, tekstur angka 7-segmen |
+| `src/die.rs` | dadu 3D + animasi lempar |
+| `src/anim.rs` | tween kecil (`Channel`) pengganti `Tween` Godot |
+| `src/input.rs` | picking sentuh/klik lewat ray vs kotak |
+| `src/world.rs` | kamera, lampu, nampan |
+| `src/ui.rs` | HUD, tombol, overlay menang/kalah |
+| `src/confetti.rs` | confetti |
+| `src/save.rs` | statistik tersimpan |
