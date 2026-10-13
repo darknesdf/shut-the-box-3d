@@ -61,5 +61,5 @@ label = "Shut The Box 3D"
 orientation = "landscape"
 
 [package.metadata.android.signing.release]
-path = "$HOME/.android/debug.keystore"
+path = "debug.keystore"
 keystore_password = "android"
