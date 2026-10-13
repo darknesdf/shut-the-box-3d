@@ -58,7 +58,7 @@ fn spawn_button(p: &mut ChildBuilder, kind: Btn, label: &str, width: f32, font: 
         Button,
         Node {
             width: Val::Px(width),
-            height: Val::Px(90.0),
+            height: Val::Px(64.0),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center,
             ..default()
@@ -91,13 +91,13 @@ fn setup_ui(mut commands: Commands) {
         .with_children(|p| {
             p.spawn((
                 Text::new(""),
-                TextFont { font_size: 34.0, ..default() },
+                TextFont { font_size: 26.0, ..default() },
                 TextColor(Color::WHITE),
                 UiText::Info,
             ));
             p.spawn((
                 Text::new(""),
-                TextFont { font_size: 24.0, ..default() },
+                TextFont { font_size: 18.0, ..default() },
                 TextColor(Color::srgb(0.85, 0.9, 1.0)),
                 UiText::Sub,
             ));
@@ -107,17 +107,17 @@ fn setup_ui(mut commands: Commands) {
     commands
         .spawn(Node {
             position_type: PositionType::Absolute,
-            bottom: Val::Px(24.0),
+            bottom: Val::Px(36.0),
             left: Val::Px(0.0),
             width: Val::Percent(100.0),
             justify_content: JustifyContent::Center,
-            column_gap: Val::Px(20.0),
+            column_gap: Val::Px(32.0),
             ..default()
         })
         .with_children(|p| {
-            spawn_button(p, Btn::Roll, "ROLL", 300.0, 42.0);
-            spawn_button(p, Btn::Clear, "Clear", 170.0, 32.0);
-            spawn_button(p, Btn::New, "New game", 220.0, 32.0);
+            spawn_button(p, Btn::Roll, "ROLL", 210.0, 30.0);
+            spawn_button(p, Btn::Clear, "Clear", 130.0, 24.0);
+            spawn_button(p, Btn::New, "New game", 170.0, 24.0);
         });
 
     // red flash when you lose
@@ -163,18 +163,18 @@ fn setup_ui(mut commands: Commands) {
             .with_children(|p| {
                 p.spawn((
                     Text::new(""),
-                    TextFont { font_size: 76.0, ..default() },
+                    TextFont { font_size: 52.0, ..default() },
                     TextColor(Color::WHITE),
                     UiText::Title,
                 ));
                 p.spawn((
                     Text::new(""),
-                    TextFont { font_size: 30.0, ..default() },
+                    TextFont { font_size: 22.0, ..default() },
                     TextColor(Color::srgb(0.88, 0.92, 1.0)),
                     TextLayout::new_with_justify(JustifyText::Center),
                     UiText::Detail,
                 ));
-                spawn_button(p, Btn::Again, "Play again", 300.0, 40.0);
+                spawn_button(p, Btn::Again, "Play again", 220.0, 28.0);
             });
         });
 }
