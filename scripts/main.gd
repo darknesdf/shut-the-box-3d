@@ -9,6 +9,7 @@ enum State { IDLE, ROLLING, SELECTING, ANIMATING, OVER }
 const TILE_SPACING := 1.3
 const TILE_Z := -2.6
 const SAVE_PATH := "user://shutbox.cfg"
+const CAM_TARGET := Vector3(0, 0, -0.9)
 
 var state: int = State.IDLE
 var tiles: Array = []
@@ -44,7 +45,18 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	time_acc += delta
 	camera.position = Vector3(sin(time_acc * 0.35) * 0.35, 9.0 + sin(time_acc * 0.27) * 0.15, 8.5)
-	camera.look_at(Vector3(0, 0, -0.2), Vector3.UP)
+	camera.look_at(CAM_TARGET, Vector3.UP)
+
+
+## Wide phones fit by height, narrower screens fit by width, so the whole tray stays visible.
+func _fit_camera() -> void:
+	var s := get_viewport().get_visible_rect().size
+	if s.x / maxf(s.y, 1.0) >= 1.7:
+		camera.keep_aspect = Camera3D.KEEP_HEIGHT
+		camera.fov = 46.0
+	else:
+		camera.keep_aspect = Camera3D.KEEP_WIDTH
+		camera.fov = 62.0
 
 
 # ---------------------------------------------------------------- world
@@ -73,26 +85,25 @@ func _build_world() -> void:
 	env.background_color = Color(0.07, 0.09, 0.13)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.72, 0.76, 0.92)
-	env.ambient_light_energy = 0.55
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.ambient_light_energy = 0.35
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-55, -25, 0)
-	sun.light_energy = 1.15
+	sun.light_energy = 0.7
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 30.0
 	add_child(sun)
 
 	camera = Camera3D.new()
-	camera.keep_aspect = Camera3D.KEEP_WIDTH
-	camera.fov = 60.0
 	camera.current = true
 	add_child(camera)
 	camera.position = Vector3(0, 9.0, 8.5)
-	camera.look_at(Vector3(0, 0, -0.2), Vector3.UP)
+	camera.look_at(CAM_TARGET, Vector3.UP)
+	_fit_camera()
+	get_viewport().size_changed.connect(_fit_camera)
 
 	# table + tray
 	var floor_mi := MeshInstance3D.new()
@@ -109,8 +120,8 @@ func _build_world() -> void:
 	_box(Vector3(0.4, 0.8, 9.2), Vector3(-7.0, 0.4, -0.1), wood.darkened(0.1))
 	_box(Vector3(0.4, 0.8, 9.2), Vector3(7.0, 0.4, -0.1), wood.darkened(0.1))
 	_box(Vector3(14.4, 0.5, 0.4), Vector3(0, 0.25, 4.3), wood.darkened(0.1))
-	_box(Vector3(13.2, 0.04, 5.8), Vector3(0, 0.02, 1.4), Color(0.12, 0.38, 0.22), 0.95) # felt
-	_box(Vector3(13.2, 0.04, 2.0), Vector3(0, 0.02, -2.3), Color(0.30, 0.17, 0.09), 0.6)  # tile ledge
+	_box(Vector3(13.2, 0.04, 5.8), Vector3(0, 0.02, 1.4), Color(0.05, 0.2, 0.11), 0.95)  # felt
+	_box(Vector3(13.2, 0.06, 1.8), Vector3(0, 0.03, -2.3), Color(0.30, 0.17, 0.09), 0.6) # tile ledge
 
 	# confetti
 	confetti = CPUParticles3D.new()
@@ -149,7 +160,7 @@ func _build_tiles() -> void:
 		var t = TileScript.new()
 		add_child(t)
 		t.setup(i + 1)
-		t.position = Vector3((i - 4) * TILE_SPACING, 0.0, TILE_Z)
+		t.position = Vector3((i - 4) * TILE_SPACING, 0.06, TILE_Z)
 		tiles.append(t)
 
 
