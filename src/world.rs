@@ -7,6 +7,11 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use rand::Rng;
 
+#[cfg(target_os = "android")]
+const MSAA: Msaa = Msaa::Sample2;
+#[cfg(not(target_os = "android"))]
+const MSAA: Msaa = Msaa::Sample4;
+
 pub const CAM_TARGET: Vec3 = Vec3::new(0.0, 0.0, -0.9);
 
 #[derive(Component)]
@@ -28,7 +33,7 @@ fn setup_world(
     commands.spawn((
         Camera3d::default(),
         Projection::Perspective(PerspectiveProjection { fov: 46f32.to_radians(), ..default() }),
-        Msaa::Sample4,
+        MSAA,
         Tonemapping::AcesFitted,
         Transform::from_xyz(0.0, 9.0, 8.5).looking_at(CAM_TARGET, Vec3::Y),
         MainCamera,
@@ -42,7 +47,7 @@ fn setup_world(
             (-55f32).to_radians(),
             0.0,
         )),
-        CascadeShadowConfigBuilder { maximum_distance: 30.0, ..default() }.build(),
+        CascadeShadowConfigBuilder { num_cascades: 1, maximum_distance: 20.0, ..default() }.build(),
     ));
 
     let mut boxm = |size: Vec3, pos: Vec3, c: Color, rough: f32| {

@@ -220,6 +220,9 @@ fn ui_update(
     mut overlay: Query<&mut Visibility, With<OverlayRoot>>,
     mut flash: Query<&mut BackgroundColor, With<FlashNode>>,
 ) {
+    if !game.is_changed() {
+        return;
+    }
     let s = game.stats;
     let best = if s.best < 0 { "-".to_string() } else { s.best.to_string() };
     let sub = format!(

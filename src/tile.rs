@@ -24,6 +24,7 @@ pub struct Tile {
     mesh_root: Entity,
     z: Channel,
     x: Channel,
+    y: Channel,
     scale: Channel,
     rot: Channel,
     gold: Channel,
@@ -41,7 +42,19 @@ pub struct TileBody {
 }
 
 impl Tile {
+    fn busy(&self) -> bool {
+        self.z.busy()
+            || self.x.busy()
+            || self.y.busy()
+            || self.scale.busy()
+            || self.rot.busy()
+            || self.gold.busy()
+            || self.lose.busy()
+    }
+
     pub fn set_selected(&mut self, on: bool) {
+        // lifted card leans a little towards the camera
+        self.rot.go(if on { 0.10 } else { 0.0 }, 0.28, 0.0, Ease::BackOut);
         self.z.go(if on { 0.45 } else { 0.0 }, 0.28, 0.0, Ease::BackOut);
         self.scale.go(if on { 1.07 } else { 1.0 }, 0.28, 0.0, Ease::BackOut);
         self.gold.go(if on { 1.0 } else { 0.0 }, 0.22, 0.0, Ease::SineInOut);
@@ -63,6 +76,10 @@ impl Tile {
         self.z.go(0.0, 0.22, delay, Ease::QuadOut);
         self.scale.go(1.0, 0.22, delay, Ease::QuadOut);
         self.x.go(0.0, 0.1, delay, Ease::SineInOut);
+        // small hop up before the fall
+        self.y.clear();
+        self.y.push(0.28, 0.12, delay, Ease::QuadOut);
+        self.y.push(0.0, 0.26, 0.0, Ease::QuadIn);
         self.rot.clear();
         self.rot.push(FLAT, 0.34, delay + 0.08, Ease::QuadIn);
         self.rot.push(FLAT - 0.28, 0.13, 0.0, Ease::QuadOut);
@@ -76,6 +93,7 @@ impl Tile {
         self.lose.go(1.0, 0.4, delay, Ease::SineInOut);
         self.z.go(0.0, 0.25, 0.0, Ease::SineInOut);
         self.x.go(0.0, 0.25, 0.0, Ease::SineInOut);
+        self.y.go(0.0, 0.25, 0.0, Ease::SineInOut);
         self.scale.go(1.0, 0.25, 0.0, Ease::SineInOut);
         self.rot.go(0.24, 0.5, delay, Ease::QuadOut);
     }
@@ -83,6 +101,7 @@ impl Tile {
     pub fn reset(&mut self, delay: f32) {
         self.z.go(0.0, 0.3, delay, Ease::SineInOut);
         self.x.go(0.0, 0.3, delay, Ease::SineInOut);
+        self.y.go(0.0, 0.3, delay, Ease::SineInOut);
         self.scale.go(1.0, 0.3, delay, Ease::SineInOut);
         self.gold.go(0.0, 0.3, delay, Ease::SineInOut);
         self.lose.go(0.0, 0.3, delay, Ease::SineInOut);
@@ -144,6 +163,7 @@ fn setup_tiles(
             mesh_root,
             z: Channel::new(0.0),
             x: Channel::new(0.0),
+            y: Channel::new(0.0),
             scale: Channel::new(1.0),
             rot: Channel::new(0.0),
             gold: Channel::new(0.0),
@@ -190,8 +210,13 @@ fn tile_anim_system(
 ) {
     let dt = time.delta_secs();
     for (mut tile, mut tf) in &mut tiles {
+        // nothing moving: skip all work (and avoid touching change detection)
+        if !tile.busy() {
+            continue;
+        }
         tile.z.update(dt);
         tile.x.update(dt);
+        tile.y.update(dt);
         tile.scale.update(dt);
         tile.rot.update(dt);
         tile.gold.update(dt);
@@ -199,7 +224,7 @@ fn tile_anim_system(
 
         tf.rotation = Quat::from_rotation_x(tile.rot.v);
         if let Ok(mut r) = roots.get_mut(tile.mesh_root) {
-            r.translation = Vec3::new(tile.x.v, 0.0, tile.z.v);
+            r.translation = Vec3::new(tile.x.v, tile.y.v, tile.z.v);
             r.scale = Vec3::splat(tile.scale.v);
         }
 

@@ -62,12 +62,14 @@ fn confetti_system(
     let dt = time.delta_secs();
     let mut rng = rand::thread_rng();
 
-    if std::mem::take(&mut game.confetti_clear) {
+    if game.confetti_clear {
+        game.confetti_clear = false;
         for (e, _, _) in &q {
             commands.entity(e).despawn();
         }
     }
-    if std::mem::take(&mut game.confetti_burst) {
+    if game.confetti_burst {
+        game.confetti_burst = false;
         let cos_spread = 55f32.to_radians().cos();
         for i in 0..AMOUNT {
             // random direction inside a 55 degree cone around +Y
@@ -97,6 +99,8 @@ fn confetti_system(
             continue;
         }
         c.vel.y += GRAVITY * dt;
+        // shrink away at the end of life
+        tf.scale = Vec3::splat(((LIFETIME - c.age) / 0.8).clamp(0.0, 1.0));
         tf.translation += c.vel * dt;
         let s = c.spin * dt;
         tf.rotate(Quat::from_euler(EulerRot::XYZ, s.x, s.y, s.z));

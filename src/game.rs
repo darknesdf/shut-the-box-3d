@@ -111,7 +111,9 @@ pub fn game_system(
     mut dice: Query<(&mut Die, &mut Transform, &mut Visibility)>,
 ) {
     let dt = time.delta_secs();
-    game.flash.update(dt);
+    if game.flash.busy() {
+        game.flash.update(dt);
+    }
 
     if std::mem::take(&mut act.new_game) {
         new_game(&mut game, &mut tiles, &mut dice);

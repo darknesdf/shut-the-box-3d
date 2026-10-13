@@ -25,6 +25,7 @@ pub fn main() {
             ..default()
         }))
         .insert_resource(ClearColor(Color::srgb(0.07, 0.09, 0.13)))
+        .insert_resource(bevy::pbr::DirectionalLightShadowMap { size: 1024 })
         .insert_resource(AmbientLight {
             color: Color::srgb(0.72, 0.76, 0.92),
             brightness: 350.0,

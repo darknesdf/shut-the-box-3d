@@ -60,6 +60,11 @@ impl Channel {
         self.queue.clear();
     }
 
+    /// True while a segment is running or queued.
+    pub fn busy(&self) -> bool {
+        self.cur.is_some() || !self.queue.is_empty()
+    }
+
     pub fn set(&mut self, v: f32) {
         self.clear();
         self.v = v;
