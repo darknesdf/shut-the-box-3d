@@ -5,9 +5,11 @@ extends Node3D
 const W := 1.1
 const H := 1.5
 const T := 0.18
+const FLAT := PI / 2.0
 
 const CREAM := Color(0.96, 0.92, 0.82)
 const GOLD := Color(1.0, 0.8, 0.3)
+const LOSE := Color(0.88, 0.36, 0.32)
 
 var number := 1
 var is_open := true
@@ -15,7 +17,8 @@ var selected := false
 
 var mesh_root: Node3D
 var plate_mat: StandardMaterial3D
-var _tween: Tween
+var _tween: Tween      # pose of mesh_root + plate colour
+var _rot_tween: Tween  # hinge rotation
 
 
 func setup(n: int) -> void:
@@ -89,35 +92,75 @@ func setup(n: int) -> void:
 func _kill() -> void:
 	if _tween and _tween.is_valid():
 		_tween.kill()
+	if _rot_tween and _rot_tween.is_valid():
+		_rot_tween.kill()
 
 
 func set_selected(on: bool) -> void:
 	selected = on
-	_kill()
+	if _tween and _tween.is_valid():
+		_tween.kill()
 	_tween = create_tween().set_parallel(true)
-	_tween.tween_property(mesh_root, "position:z", 0.45 if on else 0.0, 0.3) \
+	_tween.tween_property(mesh_root, "position:z", 0.45 if on else 0.0, 0.28) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_tween.tween_property(mesh_root, "scale", Vector3.ONE * (1.07 if on else 1.0), 0.3) \
+	_tween.tween_property(mesh_root, "scale", Vector3.ONE * (1.07 if on else 1.0), 0.28) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_tween.tween_property(plate_mat, "albedo_color", GOLD if on else CREAM, 0.2)
+	_tween.tween_property(plate_mat, "albedo_color", GOLD if on else CREAM, 0.22) \
+		.set_trans(Tween.TRANS_SINE)
 
 
+## Quick, damped side-to-side wiggle ("that doesn't fit").
 func shake() -> void:
-	_kill()
+	if _tween and _tween.is_valid():
+		_tween.kill()
 	_tween = create_tween()
-	for dx in [0.12, -0.12, 0.08, -0.08, 0.0]:
-		_tween.tween_property(mesh_root, "position:x", dx, 0.05)
+	var amp := 0.14
+	for i in range(5):
+		_tween.tween_property(mesh_root, "position:x", amp * (1.0 if i % 2 == 0 else -1.0), 0.05) \
+			.set_trans(Tween.TRANS_SINE)
+		amp *= 0.6
+	_tween.tween_property(mesh_root, "position:x", 0.0, 0.05).set_trans(Tween.TRANS_SINE)
 
 
+## Fold down onto the table: ease-in fall, then a couple of shrinking rebounds.
 func flip_down(delay: float) -> void:
 	is_open = false
 	selected = false
 	_kill()
 	_tween = create_tween().set_parallel(true)
-	_tween.tween_property(mesh_root, "position:z", 0.0, 0.25).set_delay(delay)
-	_tween.tween_property(mesh_root, "scale", Vector3.ONE, 0.25).set_delay(delay)
-	_tween.tween_property(self, "rotation:x", PI / 2.0, 0.85).set_delay(delay) \
-		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	_tween.tween_property(mesh_root, "position:z", 0.0, 0.22).set_delay(delay) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_tween.tween_property(mesh_root, "scale", Vector3.ONE, 0.22).set_delay(delay) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_tween.tween_property(mesh_root, "position:x", 0.0, 0.1).set_delay(delay)
+
+	_rot_tween = create_tween()
+	_rot_tween.tween_interval(delay + 0.08)
+	_rot_tween.tween_property(self, "rotation:x", FLAT, 0.34) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_rot_tween.tween_property(self, "rotation:x", FLAT - 0.28, 0.13) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_rot_tween.tween_property(self, "rotation:x", FLAT, 0.13) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_rot_tween.tween_property(self, "rotation:x", FLAT - 0.07, 0.07) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_rot_tween.tween_property(self, "rotation:x", FLAT, 0.07) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+
+## Called on the tiles still standing when the player loses: tint red and slump forward.
+func mark_lost(delay: float) -> void:
+	selected = false
+	_kill()
+	_tween = create_tween().set_parallel(true)
+	_tween.tween_property(plate_mat, "albedo_color", LOSE, 0.4).set_delay(delay) \
+		.set_trans(Tween.TRANS_SINE)
+	_tween.tween_property(mesh_root, "position", Vector3.ZERO, 0.25)
+	_tween.tween_property(mesh_root, "scale", Vector3.ONE, 0.25)
+	_rot_tween = create_tween()
+	_rot_tween.tween_interval(delay)
+	_rot_tween.tween_property(self, "rotation:x", 0.24, 0.5) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 func reset(delay: float = 0.0) -> void:
@@ -125,8 +168,11 @@ func reset(delay: float = 0.0) -> void:
 	selected = false
 	_kill()
 	_tween = create_tween().set_parallel(true)
-	_tween.tween_property(self, "rotation:x", 0.0, 0.6).set_delay(delay) \
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_tween.tween_property(mesh_root, "position", Vector3.ZERO, 0.3).set_delay(delay)
+	_tween.tween_property(mesh_root, "position", Vector3.ZERO, 0.3).set_delay(delay) \
+		.set_trans(Tween.TRANS_SINE)
 	_tween.tween_property(mesh_root, "scale", Vector3.ONE, 0.3).set_delay(delay)
 	_tween.tween_property(plate_mat, "albedo_color", CREAM, 0.3).set_delay(delay)
+	_rot_tween = create_tween()
+	_rot_tween.tween_interval(delay)
+	_rot_tween.tween_property(self, "rotation:x", 0.0, 0.6) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

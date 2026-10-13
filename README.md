@@ -2,11 +2,13 @@
 
 A semi-3D "Shut the Box" game made with **Godot 4.3** (GDScript, GL Compatibility renderer).
 
-- 3D dice with procedurally drawn pips, thrown with a bounce + spin and landing on the rolled value
-- Wooden 3D tray, numbered cards 1-9 that pop out when selected and fold down with a bounce
-- Gentle camera sway, shadows, confetti when you shut the box
+- 3D dice with procedurally drawn pips, thrown in a smooth arc with damped bounces and a spin that winds down onto the rolled value
+- Wooden 3D tray, numbered cards 1-9 that pop out when selected and fold down with an ease-in drop and soft rebounds
+- **Lost screen**: when no combination fits, the remaining tiles turn red and slump, the camera shakes, and a "YOU LOST" panel shows your score
+- **Win screen** with confetti when you shut the box
+- **Clear** button to un-pick tiles, stats for best score and wins / games played (saved locally)
+- Haptic feedback on Android, gentle camera sway, shadows
 - Touch / mouse controls, landscape layout
-- Best score is saved locally
 
 ## How to play
 

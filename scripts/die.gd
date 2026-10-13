@@ -6,12 +6,19 @@ signal landed
 
 static var _textures: Array = []
 
+# Roll motion tuning: a fall from the throw height, then BOUNCES damped hops.
+const FALL_FRAC := 0.30   # share of the roll spent on the first fall
+const BOUNCES := 4
+const RESTITUTION := 0.55 # each hop is shorter in time by this factor (height by its square)
+const HOP_HEIGHT := 1.6
+
 var value := 1
 var _final := Quaternion.IDENTITY
 var _axis := Vector3.UP
 var _spins := 0.0
 var _from := Vector3.ZERO
 var _to := Vector3.ZERO
+var _tw: Tween
 
 
 func _ready() -> void:
@@ -110,8 +117,15 @@ static func _base_quat(v: int) -> Quaternion:
 		_: return Quaternion(Vector3.RIGHT, PI / 2)
 
 
+## Cancel a roll in progress (used when a new game starts mid-throw).
+func stop() -> void:
+	if _tw and _tw.is_valid():
+		_tw.kill()
+
+
 ## Throw the die from `from` to `to` so that face `v` ends up on top.
-func roll_to(v: int, from: Vector3, to: Vector3, duration: float = 1.5) -> void:
+func roll_to(v: int, from: Vector3, to: Vector3, duration: float = 1.7) -> void:
+	stop()
 	value = v
 	_final = Quaternion(Vector3.UP, randf() * TAU) * _base_quat(v)
 	_axis = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1))
@@ -123,15 +137,37 @@ func roll_to(v: int, from: Vector3, to: Vector3, duration: float = 1.5) -> void:
 	_to = to
 	position = from
 	_step(0.0)
-	var tw := create_tween()
-	tw.tween_method(_step, 0.0, 1.0, duration)
-	tw.finished.connect(func(): landed.emit())
+	_tw = create_tween()
+	_tw.tween_method(_step, 0.0, 1.0, duration)
+	_tw.finished.connect(func(): landed.emit())
+
+
+## Height above the landing spot at normalized time t:
+## an accelerating fall, then damped parabolic hops (each shorter and quicker).
+func _height(t: float) -> float:
+	if t < FALL_FRAC:
+		var u0 := t / FALL_FRAC
+		return maxf(_from.y - _to.y, 0.0) * (1.0 - u0 * u0)
+	var rem := (t - FALL_FRAC) / (1.0 - FALL_FRAC)
+	var total := 0.0
+	for k in range(BOUNCES):
+		total += pow(RESTITUTION, float(k))
+	var acc := 0.0
+	for k in range(BOUNCES):
+		var w := pow(RESTITUTION, float(k)) / total
+		if rem <= acc + w or k == BOUNCES - 1:
+			var u1 := clampf((rem - acc) / w, 0.0, 1.0)
+			return 4.0 * HOP_HEIGHT * pow(RESTITUTION, float(2 * k)) * u1 * (1.0 - u1)
+		acc += w
+	return 0.0
 
 
 func _step(t: float) -> void:
-	var e := 1.0 - pow(1.0 - t, 3.0)
-	quaternion = Quaternion(_axis, _spins * (1.0 - e)) * _final
-	var p := _from.lerp(_to, e)
-	var bounce := absf(cos(t * PI * 2.5)) * 2.2 * pow(1.0 - t, 1.6)
-	p.y = _to.y + bounce
+	# spin winds down smoothly and is exactly the target orientation at t = 1
+	var spin_e := 1.0 - pow(1.0 - t, 2.6)
+	quaternion = Quaternion(_axis, _spins * (1.0 - spin_e)) * _final
+	# slide across the table with a soft ease-out while hopping
+	var slide_e := 1.0 - pow(1.0 - t, 2.2)
+	var p := _from.lerp(_to, slide_e)
+	p.y = _to.y + _height(t)
 	position = p
